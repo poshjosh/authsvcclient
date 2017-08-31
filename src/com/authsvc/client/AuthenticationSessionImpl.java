@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 NUROX Ltd.
+ *
+ * Licensed under the NUROX Ltd Software License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.looseboxes.com/legal/licenses/software.html
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.authsvc.client;
 
 import com.authsvc.client.parameters.Authenticateuser;
@@ -21,58 +37,47 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
-import org.json.simple.JSONObject;
+import java.text.ParseException;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
 
 /**
- * @(#)RemoteSession.java   22-Jan-2015 12:15:31
- *
- * Copyright 2011 NUROX Ltd, Inc. All rights reserved.
- * NUROX Ltd PROPRIETARY/CONFIDENTIAL. Use is subject to license 
- * terms found at http://www.looseboxes.com/legal/licenses/software.html
+ * @author Chinomso Bassey Ikwuagwu on Jul 26, 2017 10:21:47 PM
  */
-
-/**
- * @author   chinomso bassey ikwuagwu
- * @version  2.0
- * @since    2.0
- * @deprecated Rather use {@link com.authsvc.client.AuthenticationSessionImpl AuthenticationSessionImpl}
- */
-@Deprecated
-public class RemoteSession extends ConnectionManager {
+public class AuthenticationSessionImpl implements AuthenticationSession {
     
-    private String target;
-
-    public RemoteSession() {
-        this(null);
-    }
+    private final String serviceEndPoint;
     
-    public RemoteSession(String target) {
-        this(target, 0, 0);
+    private final ConnectionManager connectionManager;
+
+    public AuthenticationSessionImpl(String svcEndPoint) {
+        this(svcEndPoint, 0, 0);
     }
 
-    public RemoteSession(String target, int maxRetrials, long retrialIntervals) {
-        super(maxRetrials, retrialIntervals);
-        this.target = target;
-        this.init();
+    public AuthenticationSessionImpl(String svcEndPoint, int maxRetrials, long retrialIntervals) {
+        this(new ConnectionManager(maxRetrials, retrialIntervals), svcEndPoint);
     }
     
-    private void init() {
-        this.setAddCookies(true);
-        this.setGetCookies(true);
+    public AuthenticationSessionImpl(ConnectionManager connMgr, String svcEndPoint) {
+        this.connectionManager = Objects.requireNonNull(connMgr);
+        this.serviceEndPoint = Objects.requireNonNull(svcEndPoint);
+        this.init(connMgr);
     }
     
-    public JSONObject getApp(
+    private void init(ConnectionManager connMgr) {
+        connMgr.setAddCookies(true);
+        connMgr.setGetCookies(true);
+    }
+    
+    @Override
+    public Map getApp(
             String app_email, 
             String app_pass, 
             String app_name,
             boolean create) 
             throws IOException, ParseException {
     
-        
         Getapp params = new Getapp();
         
         params.setEmailAddress(app_email);
@@ -85,7 +90,8 @@ XLogger.getInstance().log(Level.FINER, "Created {0}", this.getClass(), params.ge
         return this.getJsonResponse(params);
     }
 
-    public JSONObject getUser(
+    @Override
+    public Map getUser(
             Map app,
             Map appToken,
             Map user) 
@@ -100,7 +106,8 @@ XLogger.getInstance().log(Level.FINER, "Created {0}", this.getClass(), params.ge
         return this.getUser(app, appToken, user_email, user_pass, user_name, create);
     }
     
-    public JSONObject getUser(
+    @Override
+    public Map getUser(
             Map app,
             Map appToken,
             String user_email, 
@@ -114,7 +121,8 @@ XLogger.getInstance().log(Level.FINER, "Created {0}", this.getClass(), params.ge
                 user_email, user_pass, user_name, create);
     }
     
-    public JSONObject getUser(
+    @Override
+    public Map getUser(
             Object app_id,
             String app_token,
             String user_email, 
@@ -136,10 +144,13 @@ XLogger.getInstance().log(Level.FINER, "Created {0}", this.getClass(), params.ge
         return this.getJsonResponse(params);
     }
     
-    public JSONObject createApp(
+    @Override
+    public Map createApp(
             String app_email, 
             String app_pass, 
-            String app_name) 
+            String app_name,
+            boolean sendActivationMail, 
+            boolean activate) 
             throws IOException, ParseException {
         
         Createapp createapp = new Createapp();
@@ -147,12 +158,14 @@ XLogger.getInstance().log(Level.FINER, "Created {0}", this.getClass(), params.ge
         createapp.setEmailAddress(app_email);
         createapp.setUsername(app_name);
         createapp.setPassword(app_pass);
-        createapp.setSendRegistrationMail(false);
+        createapp.setSendRegistrationMail(sendActivationMail);
+        createapp.setActivateuser(activate);
         
         return this.getJsonResponse(createapp);
     }
     
-    public JSONObject editAppStatus(Map app) 
+    @Override
+    public Map editAppStatus(Map app) 
             throws IOException, ParseException {
         
         String app_email = (String)app.get(Editappstatus.ParamName.emailaddress.name());
@@ -164,7 +177,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.editAppStatus(app_email, app_pass);
     }
     
-    public JSONObject editAppStatus(
+    @Override
+    public Map editAppStatus(
             String app_email, String app_pass) 
             throws IOException, ParseException {
         
@@ -177,7 +191,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.getJsonResponse(editstatus);
     }
     
-    public JSONObject authorizeApp(Map app) 
+    @Override
+    public Map authorizeApp(Map app) 
             throws IOException, ParseException {
         
         String app_email = (String)app.get(Editappstatus.ParamName.emailaddress.name());
@@ -186,7 +201,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.authorizeApp(app_email, app_pass);
     }
     
-    public JSONObject authorizeApp(
+    @Override
+    public Map authorizeApp(
             String app_email, String app_pass) 
             throws IOException, ParseException {
         
@@ -197,43 +213,51 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.getJsonResponse(authapp);
     }
 
-    public JSONObject createUser(
+    @Override
+    public Map createUser(
             Map app,
             Map appToken,
             Map user) 
             throws IOException, ParseException {
         
-        String user_email = (String)user.get(Getuser.ParamName.emailaddress.name());
-        String user_name = (String)user.get(Getuser.ParamName.username.name());
-        String user_pass = (String)user.get(Getuser.ParamName.password.name());
+        String user_email = (String)user.get(Createuser.ParamName.emailaddress.name());
+        String user_name = (String)user.get(Createuser.ParamName.username.name());
+        String user_pass = (String)user.get(Createuser.ParamName.password.name());
         Object oval = user.get(Createuser.ParamName.sendregistrationmail.name());
-        boolean sendMail = oval == null ? false : Boolean.parseBoolean(oval.toString());
+        final boolean sendMail = oval == null ? false : Boolean.parseBoolean(oval.toString());
+        oval = user.get(Createuser.ParamName.activateuser.name());
+        final boolean activate = oval == null ? false : Boolean.parseBoolean(oval.toString());
         
-        return this.createUser(app, appToken, user_email, user_name, user_pass, sendMail);
+        return this.createUser(app, appToken, user_email, user_name, user_pass, sendMail, activate);
     }
     
-    public JSONObject createUser(
+    @Override
+    public Map createUser(
             Map app,
             Map appToken,
             String user_email, 
             String user_name, 
             String user_pass,
-            boolean sendActivationMail) 
+            boolean sendActivationMail,
+            boolean activate) 
             throws IOException, ParseException {
 
         Object app_id = app.get(Createuser.ParamName.appid.name());
         String app_token = (String)appToken.get(Createuser.ParamName.token.name());
         
-        return this.createUser(app_id, app_token, user_email, user_name, user_pass, sendActivationMail);
+        return this.createUser(app_id, app_token, user_email, 
+                user_name, user_pass, sendActivationMail, activate);
     }
     
-    public JSONObject createUser(
+    @Override
+    public Map createUser(
             Object app_id,
             String app_token,
             String user_email, 
             String user_name, 
             String user_pass,
-            boolean sendActivationMail) 
+            boolean sendActivationMail,
+            boolean activate) 
             throws IOException, ParseException {
         
         Createuser createuser = new Createuser();
@@ -245,11 +269,12 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         if(user_name != null) {
             createuser.setUsername(user_name);
         }
-
+        createuser.setActivateuser(activate);
         return this.getJsonResponse(createuser);
     }
 
-    public JSONObject editUserStatus(
+    @Override
+    public Map editUserStatus(
             Map app,
             Map user) 
             throws IOException, ParseException {
@@ -261,7 +286,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.editUserStatus(app_id, user_email, user_pass);
     }
     
-    public JSONObject editUserStatus(
+    @Override
+    public Map editUserStatus(
             Object app_id,
             String user_email, String user_pass) 
             throws IOException, ParseException {
@@ -276,7 +302,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.getJsonResponse(editstatus);
     }
     
-    public JSONObject loginUser(
+    @Override
+    public Map loginUser(
             Map app,
             Map user
             ) throws IOException, ParseException {
@@ -288,7 +315,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return loginUser(app_id, user_email, user_pass);
     }
     
-    public JSONObject loginUser(
+    @Override
+    public Map loginUser(
             Object app_id,
             String user_email,
             String user_pass
@@ -303,21 +331,24 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.getJsonResponse(loginuser);
     }
 
-    public JSONObject authorizeUser(
+    @Override
+    public Map authorizeUser(
             Map app,
             Map user) throws IOException, ParseException {
         
         return this.authorizeUser(app, user, true);
     }
 
-    public JSONObject deauthorizeUser(
+    @Override
+    public Map deauthorizeUser(
             Map app,
             Map user) throws IOException, ParseException {
         
         return this.authorizeUser(app, user, false);
     }
     
-    public JSONObject authorizeUser(
+    @Override
+    public Map authorizeUser(
             Map app,
             Map user,
             boolean authorize) throws IOException, ParseException {
@@ -333,7 +364,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         }
     }
 
-    public JSONObject authorizeUser(
+    @Override
+    public Map authorizeUser(
             Object app_id,
             String user_email,
             String user_pass) throws IOException, ParseException {
@@ -341,7 +373,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.authorizeUser(app_id, user_email, user_pass, true);
     }
     
-    public JSONObject deauthorizeUser(
+    @Override
+    public Map deauthorizeUser(
             Object app_id,
             String user_email,
             String user_pass) throws IOException, ParseException {
@@ -349,7 +382,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.authorizeUser(app_id, user_email, user_pass, false);
     }
     
-    public JSONObject authorizeUser(
+    @Override
+    public Map authorizeUser(
             Object app_id,
             String user_email,
             String user_pass,
@@ -369,7 +403,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.getJsonResponse(authuser);
     }
     
-    public JSONObject authenticateUser(
+    @Override
+    public Map authenticateUser(
             Map app,
             String user_email,
             String user_token
@@ -380,7 +415,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.authenticateUser(app_id, user_email, user_token);
     }
     
-    public JSONObject authenticateUser(
+    @Override
+    public Map authenticateUser(
             Object app_id,
             String user_email,
             String user_token
@@ -398,7 +434,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
     /**
      * Sends a mail to the requester's email address and returns true if successful
      */
-    public JSONObject requestUserPassword(
+    @Override
+    public Map requestUserPassword(
             Map app,
             Map user) 
             throws IOException, ParseException {
@@ -413,7 +450,8 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
     /**
      * Sends a mail to the requesters email address and returns true if successful
      */
-    public JSONObject requestUserPassword(
+    @Override
+    public Map requestUserPassword(
             Object app_id, 
             String emailAddress,
             String username) 
@@ -428,43 +466,17 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         return this.getJsonResponse(params);
     }
     
-    public boolean isError(Map json) {
-        //@related error message format. Don't change this without changing all related
-        //
-        boolean error = false;
-        for(Object key:json.keySet()) {
-            if(key.toString().toLowerCase().contains("error")) {
-                error = true;
-                break;
-            }
-        }
-        return error;
-    }
-
-    public String getErrorMessage(Map json) {
-        //@related error message format. Don't change this without changing all related
-        //
-        Object error = null;
-        for(Object key:json.keySet()) {
-            if(key.toString().toLowerCase().contains("error")) {
-                error = json.get(key);
-                break;
-            }
-        }
-        return error == null ? null : error.toString();
-    }
-    
-    private JSONObject getJsonResponse(ParametersProvider provider) 
-            throws IOException {
+    public Map getJsonResponse(ParametersProvider provider) 
+            throws IOException, ParseException {
         
         return this.getJsonResponse(
                 provider.getServletPath(), 
                 provider.getParameters());
     }
     
-    public JSONObject getJsonResponse(
+    public Map getJsonResponse(
             String servletpath, Map<String, String> params) 
-            throws IOException {
+            throws IOException, ParseException {
 
         URL url = new URL(this.getUrl(servletpath));
 //System.out.println("URL: "+url+". "+this.getClass());
@@ -472,7 +484,7 @@ XLogger.getInstance().log(Level.FINER, "Editing status of app. Email: {0}, Pass:
         
 XLogger.getInstance().log(Level.FINER, "Getting input stream from {0}, Parameters: {1}", this.getClass(), url, params);
         
-        final InputStream in = this.getInputStreamForUrlEncodedForm(url, params, true);
+        final InputStream in = connectionManager.getInputStreamForUrlEncodedForm(url, params, true);
         
         try{
             
@@ -480,11 +492,11 @@ XLogger.getInstance().log(Level.FINER, "Getting input stream from {0}, Parameter
             
         }finally{
 
-            close(in);
+            connectionManager.close(in);
         }
     }
     
-    public JSONObject getJsonResponse(InputStream in) throws IOException {
+    public Map getJsonResponse(InputStream in) throws IOException, ParseException {
 //        Reader r = new InputStreamReader(in, "utf-8");
         String str = new CharFileIO().readChars(in).toString();
 //System.out.println("======================================================="+this.getClass());        
@@ -492,10 +504,10 @@ XLogger.getInstance().log(Level.FINER, "Getting input stream from {0}, Parameter
 //System.out.println("======================================================="+this.getClass());
         JSONParser parser = new JSONParser();
         try{
-            return (JSONObject)parser.parse(str);
-        }catch(ParseException e) {
-XLogger.getInstance().log(Level.FINE, "{0}", this.getClass(), str);
-            throw new IOException("Unexpected output format", e);
+            return (Map)parser.parse(str);
+        }catch(org.json.simple.parser.ParseException e) {
+            XLogger.getInstance().log(Level.WARNING, "Error parsing respnose", this.getClass(), e);
+            throw new ParseException("Error parsing response", parser.getPosition());
         }finally{
 //            close(r);
         }
@@ -505,11 +517,7 @@ XLogger.getInstance().log(Level.FINE, "{0}", this.getClass(), str);
         if(!servletpath.startsWith("/")) {
             servletpath = "/" + servletpath;
         }
-        return this.getUrl() + servletpath;
-    }
-    
-    public String getUrl() {
-        return target;
+        return this.getServiceEndPoint() + servletpath;
     }
     
     public Map<String, String> getParameters(String appId, String email, String pass, String user) {
@@ -526,12 +534,14 @@ XLogger.getInstance().log(Level.FINE, "{0}", this.getClass(), str);
         }
         return params;
     }
-    
-    public String getTarget() {
-        return target;
-    }
 
-    public void setTarget(String target) {
-        this.target = target;
+    @Override
+    public final ConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
+    
+    @Override
+    public final String getServiceEndPoint() {
+        return serviceEndPoint;
     }
 }

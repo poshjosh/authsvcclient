@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public class Createapp extends DefaultParametersProvider {
     
-    public static enum ParamName{username, emailaddress, password, sendregistrationmail}
+    public static enum ParamName{username, emailaddress, password, sendregistrationmail, activateuser}
     
     private String username;
     
@@ -28,6 +28,8 @@ public class Createapp extends DefaultParametersProvider {
     
     private boolean sendRegistrationMail;
     
+    private boolean activateuser;
+    
     public Createapp() {
         Createapp.this.setSendRegistrationMail(true);
     }
@@ -35,7 +37,7 @@ public class Createapp extends DefaultParametersProvider {
     @Override
     public Map<String, String> getParameters() {
         
-        Map<String, String> params = this.createHashMapNoNulls(4, 1.0f);
+        Map<String, String> params = this.createHashMapNoNulls(8, 1.0f);
         
         if(username != null) {
             params.put(ParamName.username.name(), username);
@@ -45,8 +47,17 @@ public class Createapp extends DefaultParametersProvider {
             params.put(ParamName.password.name(), password);
         }
         params.put(ParamName.sendregistrationmail.name(), Boolean.toString(sendRegistrationMail));
+        params.put(ParamName.activateuser.name(), Boolean.toString(this.isActivateuser()));
         
         return params;
+    }
+
+    public boolean isActivateuser() {
+        return activateuser;
+    }
+
+    public void setActivateuser(boolean activateuser) {
+        this.activateuser = activateuser;
     }
 
     public boolean isSendRegistrationMail() {

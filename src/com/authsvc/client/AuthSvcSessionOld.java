@@ -1,37 +1,44 @@
+/*
+ * Copyright 2017 NUROX Ltd.
+ *
+ * Licensed under the NUROX Ltd Software License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.looseboxes.com/legal/licenses/software.html
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.authsvc.client;
 
 import com.authsvc.client.parameters.Createuser;
 import com.bc.util.XLogger;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Level;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
-
 /**
- * @(#)AuthSvc.java   17-Jan-2015 15:17:57
- *
- * Copyright 2011 NUROX Ltd, Inc. All rights reserved.
- * NUROX Ltd PROPRIETARY/CONFIDENTIAL. Use is subject to license 
- * terms found at http://www.looseboxes.com/legal/licenses/software.html
- */
-
-/**
- * @author   chinomso bassey ikwuagwu
- * @version  2.0
- * @since    2.0
- * @deprecated Rather use {@link com.authsvc.client.AppAuthenticationSessionImpl AppAuthenticationSessionImpl}
+ * @author Chinomso Bassey Ikwuagwu on Aug 3, 2017 9:36:20 PM
+ * @deprecated
  */
 @Deprecated
-public class AuthSvcSession extends RemoteSession implements AuthDetailsStore {
+public class AuthSvcSessionOld extends RemoteSession {
     
-    private final AuthDetailsStore appAuthDetails;
-    
-    public AuthSvcSession(AuthDetailsStore store, String target, int maxRetrials, long retrialInterval) {
+    public AuthSvcSessionOld() { }
+
+    public AuthSvcSessionOld(String target) {
+        super(target);
+    }
+
+    public AuthSvcSessionOld(String target, int maxRetrials, long retrialInterval) {
         super(target, maxRetrials, retrialInterval);
-        this.appAuthDetails = Objects.requireNonNull(store);
     }
     
     public void init(
@@ -188,23 +195,19 @@ this.getClass().getName(), System.currentTimeMillis()-tb4, Runtime.getRuntime().
         return (String)this.getAppToken().get(Createuser.ParamName.token.name());
     }
     
-    @Override
+    private Map _at_accessViaGetter;
     public void setAppToken(Map tokenPair) {
-        this.appAuthDetails.setAppToken(tokenPair);
+        this._at_accessViaGetter = tokenPair;
     }
-    
-    @Override
     public Map getAppToken() {
-        return this.appAuthDetails.getAppToken();
+        return this._at_accessViaGetter;
     }
 
-    @Override
+    private Map _ad_accessViaGetter;
     public void setAppDetails(Map appDetails) {
-        this.appAuthDetails.setAppDetails(appDetails);
+        this._ad_accessViaGetter = appDetails;
     }
-    
-    @Override
     public Map getAppDetails() {
-        return this.appAuthDetails.getAppDetails();
+        return this._ad_accessViaGetter;
     }
 }

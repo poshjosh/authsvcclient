@@ -1,12 +1,12 @@
 package com.authsvc.client;
 
 import com.bc.util.Util;
-import com.bc.util.XLogger;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -22,16 +22,11 @@ import java.util.logging.Level;
  * @version  2.0
  * @since    2.0
  */
-public class SessionLoader {
+public abstract class SessionLoader {
     
-    private int maxRetrials;
-    
-    private int retrialInterval;
-    
-    public SessionLoader() { 
-        maxRetrials = 2;
-        retrialInterval = (int)TimeUnit.MINUTES.toMillis(10);
-    }
+    public SessionLoader() {  }
+
+    protected abstract AuthSvcSession getNewSession();
 
     public void onLoad(AuthSvcSession session) { }
     
@@ -48,6 +43,7 @@ public class SessionLoader {
             @Override
             public void run() {
                 
+                final Logger logger = Logger.getLogger(this.getClass().getName());
                 try{
                     
                     AuthSvcSession authSvcSession = SessionLoader.this.load(svc_url, app_name, app_email, app_pass);
@@ -56,11 +52,15 @@ public class SessionLoader {
                     
                 }catch(Exception e) {
                     
-                    XLogger.getInstance().log(Level.WARNING, 
-                     "Failed to initialize authentication service", this.getClass(), e);
+                    logger.log(Level.WARNING, "Failed to initialize authentication service", e);
                     
                 }finally{
-                    Util.shutdownAndAwaitTermination(svc, 1, TimeUnit.SECONDS);
+                    try{
+                        Util.shutdownAndAwaitTermination(svc, 1, TimeUnit.SECONDS);
+                    }catch(Exception e) {
+                        logger.log(Level.WARNING, 
+                                "Unexpected exception while shutting down executor service for loading Authentication Session", e);
+                    }
                 }
             }
         }, delay, timeUnit); 
@@ -70,33 +70,10 @@ public class SessionLoader {
             String svc_url, String app_name, String app_email, String app_pass) 
             throws IOException {
         
-        AuthSvcSession authSvcSession = this.getNewSession(null, maxRetrials, retrialInterval);
+        AuthSvcSession authSvcSession = this.getNewSession();
 
         authSvcSession.init(svc_url, app_name, app_email, app_pass);
 
         return authSvcSession;
-    }
-    
-    protected AuthSvcSession getNewSession(String target, int maxRetrials, long retrialInterval) {
-        
-        AuthSvcSession authSvcSession = new AuthSvcSession(target, maxRetrials, retrialInterval);
-        
-        return authSvcSession;
-    }
-
-    public int getMaxRetrials() {
-        return maxRetrials;
-    }
-
-    public void setMaxRetrials(int maxRetrials) {
-        this.maxRetrials = maxRetrials;
-    }
-
-    public int getRetrialInterval() {
-        return retrialInterval;
-    }
-
-    public void setRetrialInterval(int retrialInterval) {
-        this.retrialInterval = retrialInterval;
     }
 }

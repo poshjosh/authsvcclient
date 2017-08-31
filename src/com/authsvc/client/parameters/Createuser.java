@@ -19,7 +19,7 @@ import java.util.Map;
  */
 public class Createuser extends Createapp {
     
-    public static enum ParamName{appid, token, username, emailaddress, password, sendregistrationmail}
+    public static enum ParamName{appid, token, username, emailaddress, password, sendregistrationmail, activateuser}
     
     private Object appid;
     
@@ -28,7 +28,7 @@ public class Createuser extends Createapp {
     @Override
     public Map<String, String> getParameters() {
         
-        Map<String, String> params = this.createHashMapNoNulls(6, 1.0f);
+        final Map<String, String> params = this.createHashMapNoNulls(8, 1.0f);
         
         params.put(Createapp.ParamName.emailaddress.name(), this.getEmailAddress());
         if(this.getPassword() != null) {
@@ -39,7 +39,9 @@ public class Createuser extends Createapp {
         params.put(Createapp.ParamName.sendregistrationmail.name(), Boolean.toString(this.isSendRegistrationMail()));
         if(this.getUsername() != null) {
             params.put(Createapp.ParamName.username.name(), this.getUsername());
-        }        
+        }  
+        params.put(Createuser.ParamName.activateuser.name(), Boolean.toString(this.isActivateuser()));
+        
         return params;
     }
 
