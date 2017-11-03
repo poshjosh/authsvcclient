@@ -38,6 +38,8 @@ public class AuthSvcSession extends RemoteSession implements AuthDetailsStore {
             String authsvc_url, String app_name, String app_email, String app_pass) 
             throws IOException {
 
+final long mb4 = com.bc.util.Util.availableMemory();        
+final long tb4 = System.currentTimeMillis();  
         this.setTarget(authsvc_url);
 
         Map appDetails = this.getAppDetails();
@@ -81,7 +83,7 @@ XLogger.getInstance().log(Level.FINE, "Authorizing auth svc app token for: {0}",
             this.setAppToken(tokenDetails);
   
 XLogger.getInstance().log(Level.INFO, "Done initializing {0}, Spent time: {1}, memory: {2}", this.getClass(), 
-this.getClass().getName(), System.currentTimeMillis()-tb4, Runtime.getRuntime().freeMemory()-mb4);
+this.getClass().getName(), System.currentTimeMillis()-tb4, com.bc.util.Util.usedMemory(mb4));
         }        
     }
     
