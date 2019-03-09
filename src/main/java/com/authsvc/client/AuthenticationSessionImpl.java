@@ -16,6 +16,9 @@
 
 package com.authsvc.client;
 
+import com.authsvc.client.net.HttpClientImpl;
+import com.authsvc.client.net.Response;
+import com.authsvc.client.net.HttpClient;
 import com.authsvc.client.parameters.Authenticateuser;
 import com.authsvc.client.parameters.Authorizeapp;
 import com.authsvc.client.parameters.Authorizeuser;
@@ -30,12 +33,9 @@ import com.authsvc.client.parameters.Loginuser;
 import com.authsvc.client.parameters.ParametersProvider;
 import com.authsvc.client.parameters.Requestuserpassword;
 import com.bc.io.CharFileIO;
-import com.bc.net.Response;
-import com.bc.net.impl.RequestBuilderImpl;
 import java.util.logging.Logger;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +44,6 @@ import java.util.logging.Level;
 import java.text.ParseException;
 import java.util.function.Predicate;
 import org.json.simple.parser.JSONParser;
-import com.bc.net.RequestBuilder;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Jul 26, 2017 10:21:47 PM
@@ -55,19 +54,19 @@ public class AuthenticationSessionImpl implements AuthenticationSession {
     
     private final String serviceEndPoint;
     
-    private final RequestBuilder connectionManager;
+    private final HttpClient httpClient;
     
     private final Predicate<Map> responseIsErrorTest;
 
     private Response response;
 
     public AuthenticationSessionImpl(String svcEndPoint) {
-        this(new RequestBuilderImpl(), svcEndPoint, new JsonResponseIsErrorTestImpl());
+        this(new HttpClientImpl(), svcEndPoint, new JsonResponseIsErrorTestImpl());
     }
 
-    public AuthenticationSessionImpl(RequestBuilder connMgr, 
+    public AuthenticationSessionImpl(HttpClient httpClient, 
             String svcEndPoint, Predicate<Map> responseIsErrorTest) {
-        this.connectionManager = Objects.requireNonNull(connMgr);
+        this.httpClient = Objects.requireNonNull(httpClient);
         this.serviceEndPoint = Objects.requireNonNull(svcEndPoint);
         this.responseIsErrorTest = Objects.requireNonNull(responseIsErrorTest);
     }
@@ -87,9 +86,9 @@ public class AuthenticationSessionImpl implements AuthenticationSession {
         params.setPassword(app_pass);
         params.setCreate(create);
         
-if(LOG.isLoggable(Level.FINER)){
-LOG.log(Level.FINER, "Created {0}", params.getClass().getName());
-}
+        if(LOG.isLoggable(Level.FINER)){
+            LOG.log(Level.FINER, "Created {0}", params.getClass().getName());
+        }
         
         return this.getJsonResponse(params);
     }
@@ -107,7 +106,9 @@ LOG.log(Level.FINER, "Created {0}", params.getClass().getName());
         Object oval = user.get(Getuser.ParamName.create.name());
         boolean create = oval == null ? false : Boolean.parseBoolean(oval.toString());
         
-//        LOG.fine(() -> "App: " + app + "\nApp token: " + appToken + "\nUser: " + user);
+        LOG.finer(() -> "App: " + (app==null?null:app.keySet()) + 
+                "\nApp token: " + (appToken==null?null:appToken.keySet()) + 
+                "\nUser: " + (user==null?null:user.keySet()));
         
         return this.getUser(app, appToken, user_email, user_pass, user_name, create);
     }
@@ -177,10 +178,10 @@ LOG.log(Level.FINER, "Created {0}", params.getClass().getName());
         String app_email = (String)app.get(Editappstatus.ParamName.emailaddress.name());
         String app_pass = (String)app.get(Editappstatus.ParamName.password.name());
 
-if(LOG.isLoggable(Level.FINER)){
-LOG.log(Level.FINER, "Editing status of app. Email: {0}, Pass: {1}", 
-new Object[]{ app_email,  app_pass});
-}
+        if(LOG.isLoggable(Level.FINER)){
+            LOG.log(Level.FINER, "Editing status of app. Email: {0}, Pass: {1}", 
+                    new Object[]{ app_email,  app_pass});
+        }
 
         return this.editAppStatus(app_email, app_pass);
     }
@@ -486,23 +487,16 @@ new Object[]{ app_email,  app_pass});
             String servletpath, Map<String, String> params) 
             throws IOException, ParseException {
 
-        URL url = new URL(this.getUrl(servletpath));
-//System.out.println("URL: "+url+". "+this.getClass());
-//System.out.println("Params: "+params+". "+this.getClass());
+        final String url = this.getUrl(servletpath);
         
         if(LOG.isLoggable(Level.FINE)){
-            LOG.log(Level.FINE, "Getting input stream from {0}\nParams: {1}", new Object[]{url,  params});
+            LOG.log(Level.FINE, "Getting input stream from {0}\nParams: {1}", 
+                    new Object[]{url, params == null ? null : params.keySet()});
         }
 
         final String charset = StandardCharsets.UTF_8.name();
         
-       this.response = this.connectionManager
-                .formContentType(charset)
-                .url(url)
-                .body()
-                .params(params, true)
-                .back()
-                .response();
+        this.response = this.httpClient.reset().postForm(url, params, charset, true);
         
         final InputStream in = response.getInputStream();
         
@@ -510,7 +504,7 @@ new Object[]{ app_email,  app_pass});
             
             final Map jsonResponse = this.getJsonResponse(in);
             
-            LOG.fine(() -> "Response: " + jsonResponse);
+            LOG.fine(() -> "Response: " + (jsonResponse==null?null:jsonResponse.keySet()));
             
             return jsonResponse;
             
@@ -525,11 +519,8 @@ new Object[]{ app_email,  app_pass});
     }
     
     public Map getJsonResponse(InputStream in) throws IOException, ParseException {
-//        Reader r = new InputStreamReader(in, "utf-8");
-        String str = new CharFileIO().readChars(in).toString();
-//System.out.println("======================================================="+this.getClass());        
-//System.out.println(str);
-//System.out.println("======================================================="+this.getClass());
+        final String str = new CharFileIO().readChars(in).toString();
+//        LOG.log(Level.INFO, "= = = = = = = = = = = = = = = = = = =\n{0}\n= = = = = = = = = = = = = = = = = = =", str);
         JSONParser parser = new JSONParser();
         try{
             return (Map)parser.parse(str);
@@ -597,8 +588,8 @@ new Object[]{ app_email,  app_pass});
     }
     
     @Override
-    public final RequestBuilder getConnectionManager() {
-        return connectionManager;
+    public final HttpClient getHttpClient() {
+        return httpClient;
     }
     
     @Override

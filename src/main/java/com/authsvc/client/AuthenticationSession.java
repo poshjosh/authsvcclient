@@ -16,11 +16,11 @@
 
 package com.authsvc.client;
 
-import com.bc.net.Response;
+import com.authsvc.client.net.HttpClient;
+import com.authsvc.client.net.Response;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Map;
-import com.bc.net.RequestBuilder;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Jul 26, 2017 10:36:55 PM
@@ -70,7 +70,7 @@ public interface AuthenticationSession {
 
     Map getApp(String app_email, String app_pass, String app_name, boolean create) throws IOException, ParseException;
 
-    RequestBuilder getConnectionManager();
+    HttpClient getHttpClient();
     
     Response getResponse();
 

@@ -16,8 +16,9 @@
 
 package com.authsvc.client;
 
+import com.authsvc.client.net.HttpClient;
+import com.authsvc.client.net.HttpClientImpl;
 import com.authsvc.client.parameters.Createuser;
-import com.bc.net.impl.RequestBuilderImpl;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
@@ -25,7 +26,6 @@ import java.util.logging.Level;
 import java.text.ParseException;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
-import com.bc.net.RequestBuilder;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Jul 26, 2017 10:45:29 PM
@@ -40,7 +40,7 @@ public class AppAuthenticationSessionImpl extends AuthenticationSessionImpl impl
     
     public AppAuthenticationSessionImpl(String svcEndPoint, 
             String appTokenFilename, String appDetailsFilename) {
-        this(new RequestBuilderImpl(), 
+        this(new HttpClientImpl(), 
                 svcEndPoint, 
                 new AuthDetailsLocalDiscStore(appTokenFilename, appDetailsFilename), 
                 new JsonResponseIsErrorTestImpl());
@@ -49,7 +49,7 @@ public class AppAuthenticationSessionImpl extends AuthenticationSessionImpl impl
     public AppAuthenticationSessionImpl(
             String svcEndPoint, String dir,
             String appTokenFilename, String appDetailsFilename) {
-        this(new RequestBuilderImpl(), 
+        this(new HttpClientImpl(), 
                 svcEndPoint, 
                 new AuthDetailsLocalDiscStore(dir, appTokenFilename, appDetailsFilename), 
                 new JsonResponseIsErrorTestImpl());
@@ -58,25 +58,25 @@ public class AppAuthenticationSessionImpl extends AuthenticationSessionImpl impl
     public AppAuthenticationSessionImpl(String svcEndPoint, 
             AuthDetailsLocalDiscStore.GetPathForName pathContext,
             String appTokenFilename, String appDetailsFilename) {
-        this(new RequestBuilderImpl(), 
+        this(new HttpClientImpl(), 
                 svcEndPoint, 
                 new AuthDetailsLocalDiscStore(pathContext, appTokenFilename, appDetailsFilename), 
                 new JsonResponseIsErrorTestImpl());
     }
 
     public AppAuthenticationSessionImpl(
-            RequestBuilder connMgr, String svcEndPoint,
+            HttpClient httpClient, String svcEndPoint,
             String directory, String appTokenFilename, String appDetailsFilename,
             Predicate<Map> responseIsErrorTest) {
-        this(connMgr, 
+        this(httpClient, 
                 svcEndPoint, 
                 new AuthDetailsLocalDiscStore(directory, appTokenFilename, appDetailsFilename),
                 responseIsErrorTest);
     }
     
-    public AppAuthenticationSessionImpl(RequestBuilder connMgr, String svcEndPoint,
+    public AppAuthenticationSessionImpl(HttpClient httpClient, String svcEndPoint,
             AuthDetailsStore authDetailsStore, Predicate<Map> responseIsErrorTest) {
-        super(connMgr, svcEndPoint, responseIsErrorTest);
+        super(httpClient, svcEndPoint, responseIsErrorTest);
         this.authDetailsStore = Objects.requireNonNull(authDetailsStore);
     }
     
@@ -107,7 +107,7 @@ public class AppAuthenticationSessionImpl extends AuthenticationSessionImpl impl
 
         Map appDetails = this.getAppDetails();
         
-        logger.log(Level.FINE, "Loaded auth svc app, details: {0}", appDetails==null?null:appDetails); 
+        logger.log(Level.FINE, "Loaded auth svc app, details: {0}", appDetails==null?null:appDetails.keySet()); 
         
         if(appDetails == null) {
 
